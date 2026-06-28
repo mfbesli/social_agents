@@ -18,13 +18,13 @@
     <ClInclude Include="aug_array.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="aug_vector.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="binomial_coeff.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="change_func.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="coeff_error_minimize.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="compound_container.h">
@@ -57,10 +57,13 @@
     <ClInclude Include="single_ind_entities.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="unique_id.h">
+    <ClInclude Include="single_ind_par_base.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="unique_id_auxiliary.h">
+    <ClInclude Include="single_ind_par_helper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="unique_id.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

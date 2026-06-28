@@ -18,6 +18,29 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="aug_array.h" />
+    <ClInclude Include="binomial_coeff.h" />
+    <ClInclude Include="change_func.h" />
+    <ClInclude Include="coeff_error_minimize.h" />
+    <ClInclude Include="compound_container.h" />
+    <ClInclude Include="container_traits.h" />
+    <ClInclude Include="fdc.h" />
+    <ClInclude Include="minimize.h" />
+    <ClInclude Include="numerical_sim.h" />
+    <ClInclude Include="ontic_poly_functions.h" />
+    <ClInclude Include="opers.h" />
+    <ClInclude Include="polynomial.h" />
+    <ClInclude Include="single_ind_base.h" />
+    <ClInclude Include="single_ind_entities.h" />
+    <ClInclude Include="single_ind_par_base.h" />
+    <ClInclude Include="single_ind_par_helper.h" />
+    <ClInclude Include="unique_id.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ontic_poly_funcs.cpp" />
+    <ClCompile Include="unique_id.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
@@ -127,28 +150,6 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="aug_array.h" />
-    <ClInclude Include="aug_vector.h" />
-    <ClInclude Include="binomial_coeff.h" />
-    <ClInclude Include="change_func.h" />
-    <ClInclude Include="compound_container.h" />
-    <ClInclude Include="container_traits.h" />
-    <ClInclude Include="fdc.h" />
-    <ClInclude Include="minimize.h" />
-    <ClInclude Include="numerical_sim.h" />
-    <ClInclude Include="ontic_poly_functions.h" />
-    <ClInclude Include="opers.h" />
-    <ClInclude Include="polynomial.h" />
-    <ClInclude Include="single_ind_base.h" />
-    <ClInclude Include="single_ind_entities.h" />
-    <ClInclude Include="unique_id.h" />
-    <ClInclude Include="unique_id_auxiliary.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="ontic_poly_funcs.cpp" />
-    <ClCompile Include="unique_id.cpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

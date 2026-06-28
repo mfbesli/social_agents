@@ -1,8 +1,15 @@
 #pragma once
 
-#include <unordered_map>
+// Unique ID specs:
+// - A registry to keep track of which assigned ID user objects are currently in operation 
+// - Each holder causes itself to be removed from the relevant registry during destruction as it will no longer be in operation 
+// - No need for the registry to be able to access a specific ID holder
+
+
+#include <unordered_set>
 using std::size_t;
 
+// TODO : change namespace name to uid ?
 namespace unique_id
 {
 	typedef size_t type;
@@ -12,7 +19,7 @@ namespace unique_id
 	class records
 	{
 	public:
-		typedef std::unordered_map<type, holder*> reg_type;
+		typedef std::unordered_set<type> reg_type;
 		
 	private:
 		reg_type reg;
@@ -20,8 +27,7 @@ namespace unique_id
 		type next;
 
 	public:
-		inline type assign(holder*);
-		inline holder* find(type) const;
+		inline type assign(holder&);
 		inline bool erase(type);
 
 		inline type size() const;
@@ -43,6 +49,7 @@ namespace unique_id
 
 	constexpr type Unassigned = 0;
 
+	// holder comparison object for ease of use with containers
 	struct compare
 	{
 		bool operator()(const holder&, const holder&) const;
@@ -50,24 +57,11 @@ namespace unique_id
 }
 
 
-inline unique_id::type unique_id::records::assign(holder* h)
+inline unique_id::type unique_id::records::assign(holder& h)
 {
-	if (h != nullptr)
-	{
-		reg[next] = h;
-		return next++;
-	}
-	else
-		return 0;
-}
-
-inline unique_id::holder* unique_id::records::find(type id) const
-{
-	reg_type::const_iterator i;
-	if ((i = reg.find(id)) == reg.end())
-		return nullptr;
-	else
-		return i->second;
+	reg.insert(next);
+	
+	return next++;
 }
 
 inline bool unique_id::records::erase(type id)

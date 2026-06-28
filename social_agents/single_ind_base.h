@@ -2,7 +2,7 @@
 
 #include "numerical_sim.h"
 #include "fdc.h"
-#include "polynomial_error_minimize.h"
+#include "minimize.h"
 #include "unique_id.h"
 #include "change_func.h"
 
@@ -10,7 +10,7 @@ template <class Ind>
 using individual_cont = std::list<Ind>;
 
 template <size_t dim, class Ind>
-class process_base
+class process_base_seq
 {
 public:
 	unique_id::records rec;
@@ -19,9 +19,9 @@ public:
 
 	numerical_sim<polynomial::float_type, dim> simulator;
 
-	backwards_fdc<dim> fdc_approximator;
+	backward_fdc<dim> fdc_approximator;
 
-	polynomial::minimize_error<dim> minimizer;
+	NM_minimize<polynomial::coefficients<dim>> minimizer;
 
 	const polynomial::float_type time_step;
 
@@ -30,19 +30,19 @@ public:
 	const size_t diff_record_len; // >= error length
 
 protected:
-	std::deque<aug::array_old<dim, polynomial::float_type>> state_record;
-
-	std::deque<aug::array_old<dim, polynomial::float_type>> diff_approx_record;
+	std::deque<aug::array<polynomial::float_type, dim>> state_record;
+	// TODO : determine if using std::deque<> causes unnecessary allocations and excessive memory usage due to the moving window behaviour 
+	std::deque<aug::array<polynomial::float_type, dim>> diff_approx_record;
 
 	size_t iter;
 
 	individual_cont<Ind> people;
 
 public:
-	process_base(const polynomial::coefficients<dim>&, size_t, polynomial::float_type, size_t);
+	process_base_seq(const polynomial::coefficients<dim>&, size_t, polynomial::float_type, size_t);
 
-	inline const std::deque<aug::array_old<dim, polynomial::float_type>>& get_state_record() const;
-	inline const std::deque<aug::array_old<dim, polynomial::float_type>>& get_diff_record() const;
+	inline const std::deque<aug::array<polynomial::float_type, dim>>& get_state_record() const;
+	inline const std::deque<aug::array<polynomial::float_type, dim>>& get_diff_record() const;
 	inline size_t current_iter() const;
 
 	virtual void initialize() = 0;
@@ -78,7 +78,7 @@ template <size_t dim, class Ind>
 class individual_base : public unique_id::holder
 {
 public:
-	process_base<dim, Ind>* const parent_proc;
+	process_base_seq<dim, Ind>* const parent_proc;
 
 protected:
 	polynomial::function<dim> poly;
@@ -86,7 +86,7 @@ protected:
 public:
 	change_func_base<polynomial::float_type>* change_func;
 
-	polynomial::minimize_error<dim>* minimizer;
+	NM_minimize<polynomial::coefficients<dim>>* minimizer;
 
 	error_func_base<dim, Ind>* error_func;
 
@@ -96,7 +96,7 @@ public:
 
 protected:
 	std::deque<polynomial::float_type> error_record;
-
+	// TODO : determine if using std::deque<> causes unnecessary allocations and excessive memory usage due to the moving window behaviour 
 	polynomial::float_type error_threshold, high_error_ratio;
 
 	std::deque<polynomial::coefficients<dim>> param_changes;
@@ -108,7 +108,7 @@ protected:
 	size_t biases_iter;
 
 public:
-	individual_base(process_base<dim, Ind>&, change_func_base<polynomial::float_type>&, polynomial::minimize_error<dim>&,
+	individual_base(process_base_seq<dim, Ind>&, change_func_base<polynomial::float_type>&, NM_minimize<polynomial::coefficients<dim>>&,
 		error_func_base<dim, Ind>&, size_t, size_t, polynomial::float_type, polynomial::float_type, polynomial::float_type);
 
 	inline const polynomial::function<dim>& get_poly() const;
@@ -124,10 +124,10 @@ protected:
 	inline void update();
 	inline void change_params(const polynomial::coefficients<dim>&);
 
-	virtual polynomial::term_refer<dim> free_param() = 0;
+	virtual polynomial::compound_term<dim> free_param() = 0;
 	void fix_params();
 
-	//friend polynomial::function<dim>& process_base<dim, Ind>::access_poly(Ind&); // is this still needed?
+	//friend polynomial::function<dim>& process_base_seq<dim, Ind>::access_poly(Ind&); // is this still needed?
 };
 
 template <size_t dim, class Ind>
@@ -147,7 +147,7 @@ struct error_gradient_func_base
 };
 
 template <class Func, class Grad>
-struct error_func_gradient_cont_base
+struct error_func_gradient_cont_base // TODO : rename to error_func_gradient_pair_base
 {
 	Func func;
 	Grad gradient_func;
@@ -177,20 +177,20 @@ public:
 
 
 template <size_t dim, class Ind>
-process_base<dim, Ind>::process_base(const polynomial::coefficients<dim>& poly, size_t r_len, polynomial::float_type t_step, size_t sim_fineness) :
+process_base_seq<dim, Ind>::process_base_seq(const polynomial::coefficients<dim>& poly, size_t r_len, polynomial::float_type t_step, size_t sim_fineness) :
 	rec(), ontic_poly(poly), simulator(sim_fineness), time_step(t_step), state_record_len(r_len), iter(0) {}
 
 template <size_t dim, class Ind>
-inline const std::deque<aug::array_old<dim, polynomial::float_type>>& process_base<dim, Ind>::get_state_record() const { return state_record; }
+inline const std::deque<aug::array<polynomial::float_type, dim>>& process_base_seq<dim, Ind>::get_state_record() const { return state_record; }
 
 template <size_t dim, class Ind>
-inline const std::deque<aug::array_old<dim, polynomial::float_type>>& process_base<dim, Ind>::get_diff_record() const { return diff_approx_record; }
+inline const std::deque<aug::array<polynomial::float_type, dim>>& process_base_seq<dim, Ind>::get_diff_record() const { return diff_approx_record; }
 
 template <size_t dim, class Ind>
-inline size_t process_base<dim, Ind>::current_iter() const { return iter; }
+inline size_t process_base_seq<dim, Ind>::current_iter() const { return iter; }
 
 template <size_t dim, class Ind>
-void process_base<dim, Ind>::advance()
+void process_base_seq<dim, Ind>::advance()
 {
 	iter++;
 
@@ -216,12 +216,12 @@ void process_base<dim, Ind>::advance()
 }
 
 template <size_t dim, class Ind>
-inline polynomial::function<dim>& process_base<dim, Ind>::access_poly(Ind& ind) { return ind.poly; }
+inline polynomial::function<dim>& process_base_seq<dim, Ind>::access_poly(Ind& ind) { return ind.poly; }
 
 template <size_t dim, class Ind>
-void process_base<dim, Ind>::compute_next_state()
+void process_base_seq<dim, Ind>::compute_next_state()
 {
-	auto func = [this](const aug::array_old<dim, polynomial::float_type>& eval_pt) { return this->ontic_poly.evaluate(eval_pt); };
+	auto func = [this](const aug::array<dim, polynomial::float_type>& eval_pt) { return this->ontic_poly.evaluate(eval_pt); };
 
 	state_record.push_back(simulator(func, state_record.back(), time_step));
 
@@ -230,7 +230,7 @@ void process_base<dim, Ind>::compute_next_state()
 }
 
 template <size_t dim, class Ind>
-void process_base<dim, Ind>::compute_next_diff_approx()
+void process_base_seq<dim, Ind>::compute_next_diff_approx()
 {
 	diff_approx_record.push_back(fdc_approximator(get_state_record(), time_step));
 
@@ -239,8 +239,8 @@ void process_base<dim, Ind>::compute_next_diff_approx()
 }
 
 template <size_t dim, class Ind>
-individual_base<dim, Ind>::individual_base(process_base<dim, Ind>& proc, change_func_base<polynomial::float_type>& chg_f,
-	polynomial::minimize_error<dim>& min, error_func_base<dim, Ind>& err, size_t err_len, size_t chg_len,
+individual_base<dim, Ind>::individual_base(process_base_seq<dim, Ind>& proc, change_func_base<polynomial::float_type>& chg_f,
+	NM_minimize<polynomial::coefficients<dim>>& min, error_func_base<dim, Ind>& err, size_t err_len, size_t chg_len,
 	polynomial::float_type err_thr, polynomial::float_type err_rat, polynomial::float_type fix_thr) : unique_id::holder(proc.rec),
 	parent_proc(&proc), change_func(&chg_f), minimizer(&min), error_func(&err), error_record_len(err_len), changes_len(chg_len),
 	error_threshold(err_thr), high_error_ratio(err_rat), fixing_threshold(fix_thr) {}
@@ -249,7 +249,7 @@ template <size_t dim, class Ind>
 inline const polynomial::function<dim>& individual_base<dim, Ind>::get_poly() const { return poly; }
 
 template <size_t dim, class Ind>
-void individual_base<dim, Ind>::minimize()
+void individual_base<dim, Ind>::minimize() // TODO : change
 {
 	auto lam = [this](const polynomial::coefficients<dim>& act_coeffs) { return (*this->error_func)(*this, act_coeffs); };
 
@@ -296,19 +296,21 @@ inline void individual_base<dim, Ind>::change_params(const polynomial::coefficie
 	polynomial::coefficients<dim> before = poly.coeffs;
 
 	poly.coeffs.fuse(new_coeffs);
-
-	param_changes.emplace_back();
+	
+	param_changes.emplace_back(); // TODO 030 (Part 1) : param_changes.emplace_back(poly.coeffs) instead for a single allocation
 	/*
 	for (size_t i = 1; i <= dim; i++)
 		for (const typename polynomial::coefficients<dim>::term_coeff_map::value_type& v : poly.coeffs.get_coeff_arr()[i])
 		{
-			polynomial::term_refer<dim> temp{ i, v.first };
+			polynomial::compound_term<dim> temp{ i, v.first };
 			param_changes.back().set_coeff(temp, (*change_func)(before.get_coeff(temp), v.second));
 		}*/
 
-	for (typename polynomial::coefficients<dim>::const_reference tc : poly.coeffs)
+	for (typename polynomial::coefficients<dim>::const_reference tc : poly.coeffs) // TODO 030 (Part 2) : loop over param_changes.back() instead
 	{
-		polynomial::term_refer<dim> temp{ tc.comp_no(), tc.val().first };
+		// TODO 030 (Part 3) : cont_helper<polynomial::coefficients<dim>>::project(tc) = ...
+		//					   instead of the two statements below (possibly through std::transform()) :
+		polynomial::compound_term<dim> temp{ tc.comp_no(), tc.val().first };
 		param_changes.back().set_coeff(temp, (*change_func)(before.get_coeff(temp), tc.val().second));
 	}
 
@@ -320,13 +322,13 @@ template <size_t dim, class Ind>
 void individual_base<dim, Ind>::fix_params()
 {
 	polynomial::term_cont<dim> temp;
-
+	// TODO : consider transforming below loops
 	for (size_t i = 1; i <= dim; i++)
 		for (const polynomial::term<dim>& t : poly.actives[i])
 		{
 			bool s_fix = true;
 			for (const polynomial::coefficients<dim>& cs : param_changes)
-				if (cs.get_coeff(polynomial::term_refer<dim>{ i, t }) > fixing_threshold)
+				if (cs.get_coeff(polynomial::compound_term<dim>{ i, t }) > fixing_threshold)
 				{
 					s_fix = false;
 					break;

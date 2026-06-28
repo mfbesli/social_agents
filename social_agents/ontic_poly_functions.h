@@ -4,7 +4,7 @@
 
 namespace van_der_pol
 {
-	struct poly : public polynomial::coefficients<2>
+	struct poly : public polynomial::coefficients<2> // TODO : reconsider inheritance from polynomial::coefficients<>
 	{
 		poly(polynomial::float_type mu = 1.0);
 	};

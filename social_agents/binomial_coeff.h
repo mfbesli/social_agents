@@ -1,16 +1,16 @@
 #pragma once
 
-template <typename Val>
-Val binomial_coeff(Val n, Val k)
+template <typename Int> // Int must be an integral type
+Int binomial_coeff(Int n, Int k)
 {
 	if (k < 0 || n < k)
 		return 0;
 	else
 	{
-		Val num = 1;
-		Val denom = 1;
+		Int num = 1;
+		Int denom = 1;
 
-		for (Val v = 1; v <= k; v++)
+		for (Int v = 1; v <= k; v++)
 		{
 			num *= n - k + v;
 			denom *= v;
