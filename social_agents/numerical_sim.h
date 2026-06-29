@@ -1,6 +1,5 @@
 #pragma once
 
-#include "aug_array.h"
 #include "opers.h"
 
 template <helper_operable_float_container Cont>
@@ -14,11 +13,6 @@ struct numerical_sim
 
 	template <class Func>
 	Cont operator()(Func, const Cont&, float_type) const; // 4th order Runge-Kutta method
-	// PROBLEM 010 : copies Func object, can it operate with functions returned by std::bind efficiently?
-	// do we need a universal reference (Func&&)?
-	// SOLVED : STL method is "if it's expensive to copy, pass it by std::ref()"
-	// otherwise, primitive types (including function pointers) may even be cheaper to copy than to use references,
-	// and rvalues are directly constructed into the Func parameter, in which case no copying is involved
 };
 
 
@@ -30,10 +24,10 @@ template <class Func>
 Cont numerical_sim<Cont>::operator()(Func func, const Cont& init, float_type time_step) const
 {
 	float_type h = time_step / float_type(fineness);
-	Cont curr = init; // requires CopyConstructible Cont
+	Cont curr = init;
 
-	Cont temp = cont_helper<Cont>::value_init(cont_helper<Cont>::extract(curr)); // requires MoveConstructible Cont
-	Cont k1 = temp, k2 = temp, k3 = temp, k4 = temp; // requires CopyConstructible Cont
+	Cont temp = cont_helper<Cont>::value_init(cont_helper<Cont>::extract(curr));
+	Cont k1 = temp, k2 = temp, k3 = temp, k4 = temp;
 	for (size_t i = 1; i <= fineness; i++)
 	{
 		k1 = func(curr);

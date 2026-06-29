@@ -1,7 +1,5 @@
 #pragma once
 
-// NEW
-
 #include "compound_container.h"
 #include "binomial_coeff.h"
 
@@ -12,23 +10,18 @@
 
 namespace polynomial
 {
-	//typedef long double float_type;
 	typedef double float_type;
 
 	typedef int power_type;
 
 	template <size_t dim>
 	using point = aug::array<float_type, dim>;
-	// TODO : change all aug::array<polynomial::float_type, ...> to point<...>
 
-	// TODO : make term<> a type alias (using = ...), make term<>::degree() a non-member function
 	template <size_t dim>
-	struct term : aug::array<power_type, dim>
-	{
-		bool operator==(const term<dim>&) const = default;
+	using term = aug::array<power_type, dim>;
 
-		inline power_type degree() const;
-	};
+	template <size_t dim>
+	inline power_type degree(const term<dim>&);
 
 	template <size_t dim>
 	struct term_hasher
@@ -37,17 +30,11 @@ namespace polynomial
 		size_t operator()(const term<dim>&) const;
 	};
 
-	//template <size_t dim, typename Val>
-	//using term_map = std::unordered_map<term<dim>, Val, term_hasher<dim>>; // unnecessary ?
-
-	//template <size_t dim>
-	//using term_coeff_map = std::unordered_map<term<dim>, float_type, term_hasher<dim>>;
-
 	template <size_t dim, size_t val_dim = dim>
 	using term_cont = compound_container<val_dim, std::unordered_set<term<dim>, term_hasher<dim>>>;
 
 	template <size_t dim>
-	inline float_type power(const aug::array<float_type, dim>&, const term<dim>&);
+	inline float_type power_product(const point<dim>&, const term<dim>&);
 
 	template <size_t dim>
 	using compound_term = std::pair<size_t, term<dim>>;
@@ -55,12 +42,10 @@ namespace polynomial
 	template <size_t dim, size_t val_dim = dim>
 	class coefficients
 	{
-		//using term_coeff_map	= term_map<dim, float_type>;
 		using term_coeff_map	= std::unordered_map<term<dim>, float_type, term_hasher<dim>>;
 		using coeff_cont		= compound_container<val_dim, term_coeff_map>;
 
 	public:
-		//using float_type		= polynomial::float_type;
 		using value_type		= coeff_cont::value_type;
 
 		using reference			= coeff_cont::reference;
@@ -97,7 +82,7 @@ namespace polynomial
 
 		inline bool operator==(const coefficients<dim, val_dim>&) const = default;
 
-		aug::array<float_type, val_dim> evaluate(const aug::array<float_type, dim>&) const;
+		point<val_dim> evaluate(const point<dim>&) const;
 
 		void expand(const term_cont<dim, val_dim>&);
 		void fuse(const coefficients<dim, val_dim>&);
@@ -120,18 +105,18 @@ namespace polynomial
 		inline bool in_actives(const compound_term<dim>&) const;
 		inline void activate(const compound_term<dim>&);
 
-		aug::array<float_type, dim> operator()(const aug::array<float_type, dim>&, const coefficients<dim>&) const;
-		aug::array<float_type, dim> operator()(const aug::array<float_type, dim>&) const;
+		point<dim> operator()(const point<dim>&, const coefficients<dim>&) const;
+		point<dim> operator()(const point<dim>&) const;
 	};
 }
 
 
 template <size_t dim>
-inline polynomial::power_type polynomial::term<dim>::degree() const
+inline polynomial::power_type polynomial::degree(const term<dim>& t)
 {
 	power_type s = 0;
 
-	for (const power_type& p : *this)
+	for (const power_type& p : t)
 		s += p;
 
 	return s;
@@ -146,14 +131,14 @@ size_t polynomial::term_hasher<dim>::operator()(const term<dim>& t) const
 	for (size_t i = 1; i < dim; i++)
 	{
 		sum += t[i];
-		ret += binomial_coeff(sum + i - 1, i); // overflow behaviour as expected?
+		ret += binomial_coeff(sum + i - 1, i);
 	}
 
 	return ret;
 }
 
 template <size_t dim>
-inline polynomial::float_type polynomial::power(const aug::array<float_type, dim>& pt, const term<dim>& t) // TODO : change name to arr_power (?)
+inline polynomial::float_type polynomial::power_product(const point<dim>& pt, const term<dim>& t)
 {
 	float_type ret = 1.0;
 
@@ -174,7 +159,7 @@ polynomial::coefficients<dim, val_dim>::coefficients(power_type lim) : max_deg(0
 template <size_t dim, size_t val_dim>
 bool polynomial::coefficients<dim, val_dim>::set_coeff(const compound_term<dim>& t, float_type c)
 {
-	power_type deg = t.second.degree();
+	power_type deg = degree(t.second);
 	if (t.first == 0 || t.first > val_dim || (deg_limit != No_Limit && deg > deg_limit))
 		return false;
 	else
@@ -216,10 +201,6 @@ void polynomial::coefficients<dim, val_dim>::reset()
 {
 	for (reference tc : coeffs)
 		tc.val().second = 0;
-
-	/*for (size_t j = 1; j <= val_dim; j++)
-		for (const typename term_coeff_map::value_type& tc : coeffs[j])
-			tc.second = 0;*/
 }
 
 template <size_t dim, size_t val_dim>
@@ -244,16 +225,16 @@ template <size_t dim, size_t val_dim>
 inline size_t polynomial::coefficients<dim, val_dim>::size() const { return coeffs.size(); }
 
 template <size_t dim, size_t val_dim>
-aug::array<polynomial::float_type, val_dim> polynomial::coefficients<dim, val_dim>::evaluate(const aug::array<float_type, dim>& pt) const
+polynomial::point<val_dim> polynomial::coefficients<dim, val_dim>::evaluate(const point<dim>& pt) const
 {
-	aug::array<float_type, val_dim> ret;
+	point<val_dim> ret;
 
 	for (size_t j = 1; j <= val_dim; j++)
 	{
 		float_type sum = 0.0;
 
 		for (const typename term_coeff_map::value_type& tc : coeffs[j])
-			sum += tc.second * power(pt, tc.first);
+			sum += tc.second * power_product(pt, tc.first);
 
 		ret[j] = sum;
 	}
@@ -266,12 +247,10 @@ void polynomial::coefficients<dim, val_dim>::expand(const term_cont<dim, val_dim
 {
 	for (typename term_cont<dim, val_dim>::const_reference t : terms)
 	{
-		polynomial::power_type deg = t.val().degree();
+		polynomial::power_type deg = degree(t.val());
 		if ((deg_limit == No_Limit || deg <= deg_limit) && coeffs[t.comp_no()].find(t.val()) == coeffs[t.comp_no()].end())
 		{
-			// is it better to use just coeffs[t.comp_no()][t.val()]; (without ...].find(t.val()) == ... ) ?
-			//coeffs[t.comp_no()][t.val()] = 0.0;	// default constructor instead of assignment?
-			coeffs[t.comp_no()][t.val()] = {};	// or zero initialization?
+			coeffs[t.comp_no()][t.val()] = {};
 
 			if (deg > max_deg)
 				max_deg = deg;
@@ -293,7 +272,6 @@ polynomial::coefficients<dim, val_dim> polynomial::coefficients<dim, val_dim>::s
 
 	for (typename term_cont<dim, val_dim>::const_reference t : acts)
 	{
-		//compound_term<dim> temp_term{ t.comp_no(), t.val() }; // construct directly from t ?
 		compound_term<dim> temp_term{ t };
 		ret.set_coeff(temp_term, get_coeff(temp_term));
 	}
@@ -313,15 +291,14 @@ inline polynomial::coefficients<dim> polynomial::function<dim>::sieve_acts() con
 template <size_t dim>
 inline bool polynomial::function<dim>::in_actives(const compound_term<dim>& t) const
 {
-	return !(t.first == 0 || t.first > dim || actives[t.first].find(t.second) == actives[t.first].end()); // less elegant but more efficient
-	//return !(t.first == 0 || t.first > dim || actives.find(t) == actives.end()); // more elegant but less efficient
+	return !(t.first == 0 || t.first > dim || actives[t.first].find(t.second) == actives[t.first].end());
 }
 
 template <size_t dim>
 inline void polynomial::function<dim>::activate(const compound_term<dim>& t) { actives[t.first].insert(t.second); }
 
 template <size_t dim>
-aug::array<polynomial::float_type, dim> polynomial::function<dim>::operator()(const aug::array<float_type, dim>& eval_pt, const coefficients<dim>& act_coeffs) const
+polynomial::point<dim> polynomial::function<dim>::operator()(const point<dim>& eval_pt, const coefficients<dim>& act_coeffs) const
 {
 	coefficients<dim> temp_coeffs(coeffs);
 
@@ -331,7 +308,7 @@ aug::array<polynomial::float_type, dim> polynomial::function<dim>::operator()(co
 }
 
 template <size_t dim>
-aug::array<polynomial::float_type, dim> polynomial::function<dim>::operator()(const aug::array<float_type, dim>& eval_pt) const
+polynomial::point<dim> polynomial::function<dim>::operator()(const point<dim>& eval_pt) const
 {
 	return coeffs.evaluate(eval_pt);
 }

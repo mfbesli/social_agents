@@ -1,6 +1,11 @@
 #pragma once
 
-// NEWER : greatly improved version of compound_container etc. (with newer iterator design : iterator inheriting from const_iterator)
+// Compound Container specs :
+// - 
+// - 
+// - 
+
+// TODO NEXT (1st) : above comment section
 
 #include "aug_array.h"
 #include "container_traits.h"
@@ -37,9 +42,9 @@ template <size_t dim, complete_container Cont>
 class compound_const_iterator;
 
 template <size_t dim, complete_container Cont>
-class compound_container : protected aug::array<Cont, dim>
+class compound_container
 {
-	using base_array = aug::array<Cont, dim>;
+	std::array<Cont, dim> contents;
 
 public:
 	using size_type			= typename Cont::size_type;
@@ -53,25 +58,20 @@ public:
 	using iterator			= compound_iterator<dim, Cont>;
 	using const_iterator	= compound_const_iterator<dim, Cont>;
 
-	using base_array::operator[];
-	using base_array::at;
+	Cont& operator[](size_t);
+	const Cont& operator[](size_t) const;
+	Cont& at(size_t);
+	const Cont& at(size_t) const;
 
 	size_type size() const;
 	bool empty() const;
 
-	// these override the inherited begin/end functions :
 	iterator begin();
 	const_iterator begin() const;
 	iterator end();
 	const_iterator end() const;
 
 	bool operator==(const compound_container<dim, Cont>&) const = default;
-
-	// cbegin(), cend() // no need for now
-
-	// functions specializing find() according to the type of Cont (probably unnecessary)
-	//iterator find(const_reference);
-	//const_iterator find(const_reference) const;
 };
 
 template <size_t dim, complete_container Cont>
@@ -140,12 +140,25 @@ public:
 	inline pointer operator->() const;
 };
 
+
+template <size_t dim, complete_container Cont>
+Cont& compound_container<dim, Cont>::operator[](size_t i) { return contents[i - 1]; }
+
+template <size_t dim, complete_container Cont>
+const Cont& compound_container<dim, Cont>::operator[](size_t i) const { return contents[i - 1]; }
+
+template <size_t dim, complete_container Cont>
+Cont& compound_container<dim, Cont>::at(size_t i) { return contents.at(i - 1); }
+
+template <size_t dim, complete_container Cont>
+const Cont& compound_container<dim, Cont>::at(size_t i) const { return contents.at(i - 1); }
+
 template <size_t dim, complete_container Cont>
 compound_container<dim, Cont>::size_type compound_container<dim, Cont>::size() const
 {
 	size_t ret = 0;
 	for (size_t i = 1; i <= dim; i++)
-		ret += (*this)[i].size();
+		ret += contents[i].size();
 	return ret;
 }
 
@@ -153,13 +166,11 @@ template <size_t dim, complete_container Cont>
 bool compound_container<dim, Cont>::empty() const
 {
 	for (size_t i = 1; i <= dim; i++)
-		if (!(*this)[i].empty())
+		if (!contents[i].empty())
 			return false;
 	return true;
 }
 
-// TODO (old) 004 : for object c of type compound_container<,>, c.begin() == c.end() must be true if and only if c.empty() is
-// DONE
 template <size_t dim, complete_container Cont>
 compound_container<dim, Cont>::iterator compound_container<dim, Cont>::begin()
 {
@@ -168,9 +179,9 @@ compound_container<dim, Cont>::iterator compound_container<dim, Cont>::begin()
 	else
 	{
 		for (size_t i = 1; i <= dim; ++i)
-			if (!(*this)[i].empty())
-				return iterator((*this)[i].begin(), *this, i);
-		return iterator((*this)[dim].end(), *this, dim); // this->empty() case
+			if (!contents[i].empty())
+				return iterator(contents[i].begin(), *this, i);
+		return iterator(contents[dim].end(), *this, dim); // this->empty() case
 	}
 }
 
@@ -182,9 +193,9 @@ compound_container<dim, Cont>::const_iterator compound_container<dim, Cont>::beg
 	else
 	{
 		for (size_t i = 1; i <= dim; ++i)
-			if (!(*this)[i].empty())
-				return const_iterator((*this)[i].begin(), *this, i);
-		return const_iterator((*this)[dim].end(), *this, dim); // this->empty() case
+			if (!contents[i].empty())
+				return const_iterator(contents[i].begin(), *this, i);
+		return const_iterator(contents[dim].end(), *this, dim); // this->empty() case
 	}
 }
 
@@ -194,7 +205,7 @@ compound_container<dim, Cont>::iterator compound_container<dim, Cont>::end()
 	if (dim == 0)
 		return iterator();
 	else
-		return iterator((*this)[dim].end(), *this, dim);
+		return iterator(contents[dim].end(), *this, dim);
 }
 
 template <size_t dim, complete_container Cont>
@@ -203,7 +214,7 @@ compound_container<dim, Cont>::const_iterator compound_container<dim, Cont>::end
 	if (dim == 0)
 		return const_iterator();
 	else
-		return const_iterator((*this)[dim].end(), *this, dim);
+		return const_iterator(contents[dim].end(), *this, dim);
 }
 
 template <size_t dim, complete_container Cont>
@@ -217,7 +228,6 @@ template <size_t dim, complete_container Cont>
 compound_const_iterator<dim, Cont>::compound_const_iterator(base_iterator&& i, const compound_container<dim, Cont>& p, size_t cn)
 	: base_iterator(std::move(i)), parent_cont(&p), comp_no(cn) {}
 
-// DONE : change incrementation according to the requirements of PROBLEM 004
 template <size_t dim, complete_container Cont>
 compound_const_iterator<dim, Cont>& compound_const_iterator<dim, Cont>::operator++()
 {
@@ -257,12 +267,12 @@ inline bool compound_const_iterator<dim, Cont>::operator==(const compound_const_
 template <size_t dim, complete_container Cont>
 inline compound_const_iterator<dim, Cont>::reference compound_const_iterator<dim, Cont>::operator*() const
 {
-	return reference{ comp_no, base_iterator::operator*() }; // *(static_cast<const base_iterator&>(*this)) or base_iterator::operator*(); which is better?
+	return reference{ comp_no, base_iterator::operator*() };
 }
 
 template <size_t dim, complete_container Cont>
 inline compound_const_iterator<dim, Cont>::pointer compound_const_iterator<dim, Cont>::operator->() const
-{ // this may not mimic base_iterator::operator->() (e.g. may not have the same return type)
+{
 	return std::pointer_traits<pointer>::pointer_to(base_iterator::operator*());
 }
 
@@ -299,12 +309,11 @@ template <size_t dim, complete_container Cont>
 inline compound_iterator<dim, Cont>::reference compound_iterator<dim, Cont>::operator*() const
 {
 	return reference{ this->comp_no, const_cast<value_type&>(counterpart_const_iterator::operator*().val()) };
-	// apparently this sort of const_cast (where the object referred to is otherwise known to be mutable) does not result in undefined behaviour
 }
 
 template <size_t dim, complete_container Cont>
 inline compound_iterator<dim, Cont>::pointer compound_iterator<dim, Cont>::operator->() const
-{ // this may not mimic from_iterator::operator->() (e.g. may not have the same return type)
+{
 	return std::pointer_traits<pointer>::pointer_to(const_cast<value_type&>(counterpart_const_iterator::operator*().val()));
 }
 

@@ -1,13 +1,11 @@
 #pragma once
 
+// unary/binary_operate : similar to std::transform, but uses methods specified in the cont_helper<> struct (see below) to initialize and access values within a container
+
+
 #include "container_traits.h"
 
-// TODO 015 : uses of unary/binary_operate are no longer different from std::transform, consider replacing
-
-// TODO (old) 010 : unary/binary_operate should use universal (forwarding) references for function/operator arguments (e.g. Unary_Oper&&)
-// DONE : apparently it is preferred to pass by value and use std::ref() for expensive function objects, see PROBLEM 010
-
-// HELPER TEMPLATE & RELATED CONCEPTS
+// HELPER TEMPLATE vvv
 
 template <basic_container Cont>
 struct cont_helper;
@@ -59,12 +57,11 @@ struct cont_helper<Cont> : cont_helper_base<Cont>
 
 	static inline Cont value_init(const structure_type&);
 
-	static inline auto& access(const cont_helper<Cont>::iterator&);
-	static inline const auto& access(const cont_helper<Cont>::const_iterator&);
-
 	static inline auto& project(const cont_helper<Cont>::reference&);
 	static inline const auto& project(const cont_helper<Cont>::const_reference&);
 };
+
+// HELPER TEMPLATE RELATED CONCEPTS vvv
 
 namespace helper_impl
 {
@@ -72,7 +69,6 @@ namespace helper_impl
 	concept container_has_helper = basic_container<Cont> && requires(Cont ct)
 	{
 		cont_helper<Cont>::value_init(cont_helper<Cont>::extract(ct));
-		//cont_helper<Cont>::access(ct.begin());
 		cont_helper<Cont>::project(*ct.begin());
 	};
 
@@ -82,7 +78,6 @@ namespace helper_impl
 	template <container_has_helper Cont>
 	struct access_type<Cont>
 	{
-		//using type = decltype(cont_helper<Cont>::access(std::declval<Cont>().begin()));
 		using type = decltype(cont_helper<Cont>::project(*std::declval<Cont>().begin()));
 	};
 }
@@ -101,51 +96,39 @@ concept container_has_self_writable_helper = container_has_writable_helper<Cont,
 
 template <class Cont>
 concept helper_operable_float_container = std::semiregular<Cont> && container_has_self_writable_helper<Cont>&& std::floating_point<std::remove_reference_t<helper_access_t<Cont>>>;
-// TODO (old) 005 : add copy_constructible<Cont> etc. to helper_operable_float_container (or elsewhere appropriate)
-// DONE : CopyConstructible, CopyAssignable, MoveConstructible, DefaultConstructible are all required as in std::semiregular (std::swappable is not required but is still satisfied due to std::ranges::swap)
 
-// UNARY CASE
+// UNARY CASE vvv
 
 template <class Unary_Oper, basic_container Input_Cont, basic_container Output_Cont>
 inline void unary_operate(Unary_Oper op, const Input_Cont& in_ct, Output_Cont& out_ct)
 {
 	// assertion if Input_Cont and Output_Cont are arrays whose sizes don't match
-	//typename Input_Cont::const_iterator input_it = in_ct.begin();
-	//typename Output_Cont::iterator output_it = out_ct.begin();
-	// auto makes it possible to not refer to iterator types, so unary_operate can work with basic_container
 	auto input_it = in_ct.begin();
 	auto output_it = out_ct.begin();
 	for (; input_it != in_ct.end(); ++input_it, ++output_it)
-		//cont_helper<Output_Cont>::access(output_it) = op(cont_helper<Input_Cont>::access(input_it));
 		cont_helper<Output_Cont>::project(*output_it) = op(cont_helper<Input_Cont>::project(*input_it));
 }
 
 template <class Unary_Oper, basic_container Input_Cont, basic_container Output_Cont = Input_Cont>
 inline Output_Cont unary_operate(Unary_Oper op, const Input_Cont& ct)
 {
-	Output_Cont ret = cont_helper<Output_Cont>::value_init(cont_helper<Input_Cont>::extract(ct)); // requires MoveConstructible Output_Cont
-	// TODO 008 (i) : requires cont_helper<Input_Cont>::structure_type to be implicitly convertble to cont_helper<Output_Cont>::structure_type
+	Output_Cont ret = cont_helper<Output_Cont>::value_init(cont_helper<Input_Cont>::extract(ct));
 
 	unary_operate(std::forward<Unary_Oper>(op), ct, ret);
 
 	return ret;
 }
 
-// BINARY CASE
+// BINARY CASE vvv
 
 template <class Binary_Oper, basic_container Input_Cont1, basic_container Input_Cont2, basic_container Output_Cont>
 inline void binary_operate(Binary_Oper op, const Input_Cont1& in_ct1, const Input_Cont2& in_ct2, Output_Cont& out_ct)
 {
 	// assertion if Input_Cont1,2 and Output_Cont are arrays whose sizes don't match
-	//typename Input_Cont1::const_iterator input_it1 = in_ct1.begin();
-	//typename Input_Cont2::const_iterator input_it2 = in_ct2.begin();
-	//typename Output_Cont::iterator output_it = out_ct.begin();
-	// auto makes it possible to not refer to iterator types, so binary_operate can work with basic_container
 	auto input_it1 = in_ct1.begin();
 	auto input_it2 = in_ct2.begin();
 	auto output_it = out_ct.begin();
 	for (; input_it1 != in_ct1.end(); ++input_it1, ++input_it2, ++output_it)
-		//cont_helper<Output_Cont>::access(output_it) = op(cont_helper<Input_Cont1>::access(input_it1), cont_helper<Input_Cont2>::access(input_it2));
 		cont_helper<Output_Cont>::project(*output_it) = op(cont_helper<Input_Cont1>::project(*input_it1), cont_helper<Input_Cont2>::project(*input_it2));
 }
 
@@ -153,18 +136,15 @@ template <class Binary_Oper, basic_container Input_Cont1, basic_container Input_
 inline Output_Cont binary_operate(Binary_Oper op, const Input_Cont1& ct1, const Input_Cont2& ct2)
 {
 	typename cont_helper<Input_Cont1>::structure_type temp_str = cont_helper<Input_Cont1>::extract(ct1);
-	if (temp_str != cont_helper<Input_Cont2>::extract(ct2)) // TODO 008 (ii) : requires cont_helper<Input_Cont1>::extract(ct1) and cont_helper<Input_Cont2>::extract(ct2) to be comparable
+	if (temp_str != cont_helper<Input_Cont2>::extract(ct2))
 		return Output_Cont();
 
-	Output_Cont ret = cont_helper<Output_Cont>::value_init(temp_str); // requires MoveConstructible Output_Cont
-	// TODO 008 (iii) : further requires cont_helper<Input_Cont1>::structure_type to be implicitly convertible to cont_helper<Output_Cont>::structure_type
+	Output_Cont ret = cont_helper<Output_Cont>::value_init(temp_str);
 
 	binary_operate(std::forward<Binary_Oper>(op), ct1, ct2, ret);
 
 	return ret;
 }
-
-// TODO for distant future : expression templates and variadic n-ary_operate
 
 // Definitions of member functions of helper template
 
@@ -179,12 +159,6 @@ inline Cont cont_helper<Cont>::value_init(const structure_type& siz)
 	else // aggregate_container<Cont>
 		return Cont{}; // value initialization includes zero initialization of each element for aggregates
 }
-
-template <sequencelike_container Cont>
-inline auto& cont_helper<Cont>::access(const cont_helper<Cont>::iterator& pos) { return *pos; }
-
-template <sequencelike_container Cont>
-inline const auto& cont_helper<Cont>::access(const cont_helper<Cont>::const_iterator& pos) { return *pos; }
 
 template <sequencelike_container Cont>
 inline auto& cont_helper<Cont>::project(const cont_helper<Cont>::reference& ref) { return ref; }

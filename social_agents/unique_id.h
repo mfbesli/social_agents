@@ -9,7 +9,6 @@
 #include <unordered_set>
 using std::size_t;
 
-// TODO : change namespace name to uid ?
 namespace unique_id
 {
 	typedef size_t type;

@@ -11,7 +11,7 @@ van_der_pol::poly::poly(polynomial::float_type mu)
 	set_coeff(polynomial::compound_term<2>{ 2, { 2, 1 } }, -mu);
 }
 
-type_test1_func::simple_flat_poly::simple_flat_poly(polynomial::float_type K, polynomial::float_type a, polynomial::float_type b)
+simple_flat_poly::simple_flat_poly(polynomial::float_type K, polynomial::float_type a, polynomial::float_type b)
 {
 	// C1 == -K * (x1 - a)^3
 	// C2 == -x2 + b

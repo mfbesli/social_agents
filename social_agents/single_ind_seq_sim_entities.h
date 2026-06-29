@@ -1,6 +1,6 @@
 #pragma once
 
-#include "single_ind_base.h"
+#include "single_ind_seq_base.h"
 
 template <size_t dim>
 class process;

@@ -1,10 +1,8 @@
 #pragma once
 
-#include "numerical_sim.h"
-#include "fdc.h"
-#include "minimize.h"
 #include "unique_id.h"
-#include "change_func.h"
+#include "polynomial_numeric_utils.h"
+#include "fdc.h"
 
 template <class Ind>
 using individual_cont = std::list<Ind>;
@@ -30,9 +28,9 @@ public:
 	const size_t diff_record_len; // >= error length
 
 protected:
-	std::deque<aug::array<polynomial::float_type, dim>> state_record;
-	// TODO : determine if using std::deque<> causes unnecessary allocations and excessive memory usage due to the moving window behaviour 
-	std::deque<aug::array<polynomial::float_type, dim>> diff_approx_record;
+	std::deque<polynomial::point<dim>> state_record;
+
+	std::deque<polynomial::point<dim>> diff_approx_record;
 
 	size_t iter;
 
@@ -41,8 +39,8 @@ protected:
 public:
 	process_base_seq(const polynomial::coefficients<dim>&, size_t, polynomial::float_type, size_t);
 
-	inline const std::deque<aug::array<polynomial::float_type, dim>>& get_state_record() const;
-	inline const std::deque<aug::array<polynomial::float_type, dim>>& get_diff_record() const;
+	inline const std::deque<polynomial::point<dim>>& get_state_record() const;
+	inline const std::deque<polynomial::point<dim>>& get_diff_record() const;
 	inline size_t current_iter() const;
 
 	virtual void initialize() = 0;
@@ -96,7 +94,7 @@ public:
 
 protected:
 	std::deque<polynomial::float_type> error_record;
-	// TODO : determine if using std::deque<> causes unnecessary allocations and excessive memory usage due to the moving window behaviour 
+
 	polynomial::float_type error_threshold, high_error_ratio;
 
 	std::deque<polynomial::coefficients<dim>> param_changes;
@@ -181,10 +179,10 @@ process_base_seq<dim, Ind>::process_base_seq(const polynomial::coefficients<dim>
 	rec(), ontic_poly(poly), simulator(sim_fineness), time_step(t_step), state_record_len(r_len), iter(0) {}
 
 template <size_t dim, class Ind>
-inline const std::deque<aug::array<polynomial::float_type, dim>>& process_base_seq<dim, Ind>::get_state_record() const { return state_record; }
+inline const std::deque<polynomial::point<dim>>& process_base_seq<dim, Ind>::get_state_record() const { return state_record; }
 
 template <size_t dim, class Ind>
-inline const std::deque<aug::array<polynomial::float_type, dim>>& process_base_seq<dim, Ind>::get_diff_record() const { return diff_approx_record; }
+inline const std::deque<polynomial::point<dim>>& process_base_seq<dim, Ind>::get_diff_record() const { return diff_approx_record; }
 
 template <size_t dim, class Ind>
 inline size_t process_base_seq<dim, Ind>::current_iter() const { return iter; }

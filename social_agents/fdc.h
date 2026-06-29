@@ -8,9 +8,9 @@
 template <size_t dim>
 struct fdc_base
 {
-	virtual aug::array<polynomial::float_type, dim> operator()(const std::deque<aug::array<polynomial::float_type, dim>>&, polynomial::float_type) const = 0;
+	virtual polynomial::point<dim> operator()(const std::deque<polynomial::point<dim>>&, polynomial::float_type) const = 0;
 
-	virtual constexpr size_t length() const = 0; // is this really meaningful?
+	virtual constexpr size_t length() const = 0;
 
 	virtual ~fdc_base() = default;
 };
@@ -18,7 +18,7 @@ struct fdc_base
 template <size_t dim, size_t fdc_len = 5>
 struct backward_fdc : public fdc_base<dim>
 {
-	virtual aug::array<polynomial::float_type, dim> operator()(const std::deque<aug::array<polynomial::float_type, dim>>&, polynomial::float_type) const;
+	virtual polynomial::point<dim> operator()(const std::deque<polynomial::point<dim>>&, polynomial::float_type) const;
 
 	constexpr size_t length() const;
 };
@@ -26,7 +26,7 @@ struct backward_fdc : public fdc_base<dim>
 template <size_t dim>
 struct backward_fdc<dim, 3> : public fdc_base<dim>
 {
-	virtual aug::array<polynomial::float_type, dim> operator()(const std::deque<aug::array<polynomial::float_type, dim>>&, polynomial::float_type) const;
+	virtual polynomial::point<dim> operator()(const std::deque<polynomial::point<dim>>&, polynomial::float_type) const;
 
 	constexpr size_t length() const { return 4; }
 };
@@ -34,14 +34,14 @@ struct backward_fdc<dim, 3> : public fdc_base<dim>
 template <size_t dim>
 struct backward_fdc<dim, 5> : public fdc_base<dim>
 {
-	virtual aug::array<polynomial::float_type, dim> operator()(const std::deque<aug::array<polynomial::float_type, dim>>&, polynomial::float_type) const;
+	virtual polynomial::point<dim> operator()(const std::deque<polynomial::point<dim>>&, polynomial::float_type) const;
 
 	constexpr size_t length() const { return 6; }
 };
 
 
 template <size_t dim>
-aug::array<polynomial::float_type, dim> backward_fdc<dim, 3>::operator()(const std::deque<aug::array<polynomial::float_type, dim>>& d, polynomial::float_type time_step) const
+polynomial::point<dim> backward_fdc<dim, 3>::operator()(const std::deque<polynomial::point<dim>>& d, polynomial::float_type time_step) const
 {
 	constexpr size_t len = 4;//this->length();
 	size_t siz = d.size();
@@ -50,9 +50,7 @@ aug::array<polynomial::float_type, dim> backward_fdc<dim, 3>::operator()(const s
 	unary_operate([time_step](polynomial::float_type c) { return c / (6.0 * time_step); },
 		fdc_factors, fdc_factors);
 
-	aug::array<polynomial::float_type, dim> ret;
-	for (size_t i = 1; i <= dim; i++)
-		ret[i] = 0.0;
+	polynomial::point<dim> ret = {};
 
 	// size check? (siz >= len must hold)
 
@@ -64,7 +62,7 @@ aug::array<polynomial::float_type, dim> backward_fdc<dim, 3>::operator()(const s
 }
 
 template <size_t dim>
-aug::array<polynomial::float_type, dim> backward_fdc<dim, 5>::operator()(const std::deque<aug::array<polynomial::float_type, dim>>& d, polynomial::float_type time_step) const
+polynomial::point<dim> backward_fdc<dim, 5>::operator()(const std::deque<polynomial::point<dim>>& d, polynomial::float_type time_step) const
 {
 	constexpr size_t len = 6;//this->length();
 	size_t siz = d.size();
@@ -73,9 +71,7 @@ aug::array<polynomial::float_type, dim> backward_fdc<dim, 5>::operator()(const s
 	unary_operate([time_step](polynomial::float_type c) { return c / (60.0 * time_step); },
 		fdc_factors, fdc_factors);
 
-	aug::array<polynomial::float_type, dim> ret;
-	for (size_t i = 1; i <= dim; i++)
-		ret[i] = 0.0;
+	polynomial::point<dim> ret = {};
 
 	// size check? (siz >= len must hold)
 
@@ -85,7 +81,4 @@ aug::array<polynomial::float_type, dim> backward_fdc<dim, 5>::operator()(const s
 
 	return ret;
 }
-/*
-template <size_t dim>
-static constexpr size_t backward_fdc<dim, 5>::length() const { return 6; }
-*/
+

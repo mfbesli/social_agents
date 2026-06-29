@@ -1,5 +1,8 @@
 #pragma once
 
+// function objects to contextualize relative change, used by the algorithms within the project to compute if the termination criteria of algorithms are met
+
+
 #include <cmath>
 
 template <typename Flt>
