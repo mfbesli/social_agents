@@ -1,5 +1,10 @@
 #pragma once
 
+// A function object class implementing :
+// 4th Order Runge-Kutta Method : algorithm to compute (to a good approximation) the time evolution of a multi-dimensional quantity,
+// given (in the form of a function) the time-invariant ordinary differential equation (ODE) governing this evolution
+
+
 #include "opers.h"
 
 template <helper_operable_float_container Cont>
@@ -7,12 +12,13 @@ struct numerical_sim
 {
 	using float_type = std::remove_cvref_t<helper_access_t<Cont>>;
 
+	template <class Func>
+	Cont operator()(Func, const Cont&, float_type) const; // 4th order Runge-Kutta method
+														  // parameters: function defining the ODE, container holding the initial point of the multi-dimensional quantity, time step
+	
 	size_t fineness;
 
 	numerical_sim(size_t f = 100);
-
-	template <class Func>
-	Cont operator()(Func, const Cont&, float_type) const; // 4th order Runge-Kutta method
 };
 
 

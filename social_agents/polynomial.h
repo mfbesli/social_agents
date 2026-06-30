@@ -1,5 +1,8 @@
 #pragma once
 
+// TODO NEXT (1st) : Comments/descriptions in this file 
+
+#include "aug_array.h"
 #include "compound_container.h"
 #include "binomial_coeff.h"
 

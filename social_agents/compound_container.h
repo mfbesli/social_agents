@@ -1,15 +1,16 @@
 #pragma once
 
 // Compound Container specs :
-// - 
-// - 
-// - 
+// - A template class (compound_container<dim, Cont>) to hold multiple instances of a container type that 
+//		provides a simple way to iterate over all the elements of the component containers in one loop,
+//		used as the underlying container for the classes in polynomial.h
+// - An iterator (compound_iterator<dim, Cont>) and a const iterator (compound_const_iterator<dim, Cont>) type allowing such looping
+// - A special dereference type (compound_reference<Val>) for these iterators
 
-// TODO NEXT (1st) : above comment section
 
-#include "aug_array.h"
 #include "container_traits.h"
 
+#include <array>
 #include <utility> // std::pair
 
 template <typename Val>

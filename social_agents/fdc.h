@@ -1,5 +1,7 @@
 #pragma once
 
+// TODO NEXT (2nd) : description of FDC
+
 #include "polynomial.h"
 #include "opers.h"
 

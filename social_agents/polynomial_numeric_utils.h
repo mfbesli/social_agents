@@ -1,8 +1,9 @@
 #pragma once
 
-// cont_helper<...> template specialization for polynomial::coefficients<dim, val_dim> template class, necessary for the latter to work with several algorithms in the project
-// including those in numerical_sim.h and minimize.h,
-// which are #included below to allow access to them from the header that will necessarily be included to use them on polynomial::coefficients<...> objects
+// cont_helper<...> template specialization for polynomial::coefficients<dim, val_dim> template class, 
+// necessary for the latter to work with several algorithms in the project including those in numerical_sim.h and minimize.h,
+// which are #included below to allow access to them from the header that will necessarily be 
+// included to use them on polynomial::coefficients<...> objects
 
 
 #include "polynomial.h"

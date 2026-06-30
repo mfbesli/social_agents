@@ -1,5 +1,7 @@
 #pragma once
 
+// TODO NEXT (3rd) : descriptions in this file ?
+
 #include "polynomial.h"
 
 namespace van_der_pol

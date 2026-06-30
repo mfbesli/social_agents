@@ -1,5 +1,10 @@
 #pragma once
 
+// A function object class implementing :
+// Nelder-Mead Minimization Method : algorithm to find a local minimum of a scalar function of a multi-dimensional quantity
+// without having access to information on the partial derivatives (gradient) of the function (in contrast with methods like steepest descent)
+
+
 #include "aug_array.h"
 #include "change_func.h"
 #include "opers.h"
@@ -15,11 +20,16 @@ struct NM_minimize
 {
 	using float_type = std::remove_cvref_t<helper_access_t<Cont>>;
 
+	template <class Func>
+	Cont operator()(Func, const Cont&); // Nelder-Mead minimization
+										// parameters: scalar function of which to find a local minimum, container holding the point from which to start the search
+
+	// algorithmic parameters : 
 	float_type rho, chi, gamma, sigma; // rho > 0, chi > 1, chi > rho, 0 < gamma < 1, 0 < sigma < 1
 
-	size_t length_considered, min_iter; // these must be > 0
-
 	float_type change_threshold, distance_threshold;
+
+	size_t length_considered, min_iter; // these must be > 0
 
 	const change_func_base<float_type>* change_func;
 
@@ -35,6 +45,7 @@ private:
 
 	cont_helper<Cont> helper; // initialization and unary/binary_operate helper for the current minimization operation
 
+	// private auxiliary functions : 
 	inline void clear_helper();
 
 	typedef std::pair<Cont, float_type> pt_val_pair; // struct to hold a point and the result of evaluating the function at that point
@@ -49,10 +60,6 @@ private:
 
 	template <class Func>
 	inline void step(Func, std::list<pt_val_pair>&) const;
-
-public:
-	template <class Func>
-	Cont operator()(Func, const Cont&); // Nelder-Mead minimization
 };
 
 
