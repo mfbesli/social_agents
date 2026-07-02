@@ -1,6 +1,17 @@
 #pragma once
 
-// TODO NEXT (1st) : Comments/descriptions in this file 
+// Polynomial specs : 
+// - Classes to represent a multi-dimensional vector polynomial, e.g. :
+//								[	  3 * x1 - 2 * x3	  ] (Component 1)
+//		p([x1, x2, x3, x4]) ==	[ 4.5 * x1^2 + 2.5 * x3^2 ] (Component 2)
+//								[	  - 2.718 * x4^3	  ] (Component 3)
+//
+// - a coefficients<dim, val_dim> template class that represents such a polynomial as a collection 
+//		of pairs of term specifiers and coefficients (see below); the above example would be represented as an object
+//		of type coefficients<4, 3>
+// - a function<dim> struct that provides a wrapper for the coefficients<dim, dim> class and acts as a function object,
+//		allowing such a polynomial to be used as a function and used in a minimization operation on coefficient values
+
 
 #include "aug_array.h"
 #include "compound_container.h"
@@ -22,9 +33,10 @@ namespace polynomial
 
 	template <size_t dim>
 	using term = aug::array<power_type, dim>;
+	// specifies a polynomial term for a polynomial of dimension dim: e.g., x2^3 * x3 is represented as { 0, 3, 1, 0 } if dim == 4
 
 	template <size_t dim>
-	inline power_type degree(const term<dim>&);
+	inline power_type degree(const term<dim>&); // degree of a term
 
 	template <size_t dim>
 	struct term_hasher
@@ -34,19 +46,21 @@ namespace polynomial
 	};
 
 	template <size_t dim, size_t val_dim = dim>
-	using term_cont = compound_container<val_dim, std::unordered_set<term<dim>, term_hasher<dim>>>;
+	using term_cont = compound_container<val_dim, std::unordered_set<term<dim>, term_hasher<dim>>>; // container for a set of terms
 
 	template <size_t dim>
-	inline float_type power_product(const point<dim>&, const term<dim>&);
-
+	inline float_type power_product(const point<dim>&, const term<dim>&); // value of the given term evaluated at the given point, 
+																		  // e.g., if dim == 3, x1^3 * x3 evaluated at [-2, 0, 3.5] has result -28
 	template <size_t dim>
-	using compound_term = std::pair<size_t, term<dim>>;
+	using compound_term = std::pair<size_t, term<dim>>; // specifies a term together with which component of the polynomial it belongs to
 
 	template <size_t dim, size_t val_dim = dim>
-	class coefficients
+	class coefficients // a class acting as a container that specifies a multi-dimensional vector polynomial 
+					   // as a collection of term-coefficient pairs:
+					   // e.g., 3.14 * x1^2 * x2 would be represented as { { 2, 1, 0 }, 3.14 } if dim == 3
 	{
-		using term_coeff_map	= std::unordered_map<term<dim>, float_type, term_hasher<dim>>;
-		using coeff_cont		= compound_container<val_dim, term_coeff_map>;
+		using term_coeff_map	= std::unordered_map<term<dim>, float_type, term_hasher<dim>>; // container of term-coefficient pairs for a single component
+		using coeff_cont		= compound_container<val_dim, term_coeff_map>; // container of term-coefficient pairs for all val_dim components
 
 	public:
 		using value_type		= coeff_cont::value_type;
@@ -60,18 +74,20 @@ namespace polynomial
 		static constexpr power_type No_Limit = -1;
 
 	private:
-		power_type max_deg, deg_limit;
+		power_type max_deg; // maximum degree of terms present
+
+		const power_type deg_limit; // maximum allowed degree for a term
 
 		coeff_cont coeffs;
 
 	public:
-		explicit coefficients(power_type lim = No_Limit); // PROBLEM : polynomial::coefficients<,> satisfy second requirement of sizable_container because of this constructor
+		explicit coefficients(power_type lim = No_Limit); // PROBLEM : polynomial::coefficients<,> wrongly satisfy the second requirement of sizable_container because of this constructor
 
 		bool set_coeff(const compound_term<dim>&, float_type);
 		float_type get_coeff(const compound_term<dim>&) const;
 
 		void clear();
-		void reset();
+		void reset(); // sets all existing coefficients to zero
 
 		inline power_type get_max_deg() const;
 		inline power_type get_deg_limit() const;
@@ -85,34 +101,35 @@ namespace polynomial
 
 		inline bool operator==(const coefficients<dim, val_dim>&) const = default;
 
-		point<val_dim> evaluate(const point<dim>&) const;
+		point<val_dim> evaluate(const point<dim>&) const; // evaluates the polynomial at a given point
 
-		void expand(const term_cont<dim, val_dim>&);
-		void fuse(const coefficients<dim, val_dim>&);
-		coefficients<dim, val_dim> sieve(const term_cont<dim, val_dim>&) const;
+		void expand(const term_cont<dim, val_dim>&); // expands the underlying container with given terms, setting the corresponding coefficients of new terms to zero
+		void fuse(const coefficients<dim, val_dim>&); // adds the term-coefficient pairs of another coefficients<dim, val_dim> object to this object
+		coefficients<dim, val_dim> sieve(const term_cont<dim, val_dim>&) const; // returns a coefficients<dim, val_dim> object that is a slice of this object with only the given terms
 
-		inline auto get_func() const;
+		inline auto get_func() const; // binds evaluate() to this object and returns an object that acts as a standalone function
 	};
 
 	constexpr power_type No_Max = -1;
 
 	template <size_t dim>
-	struct function
+	struct function // wrapper function object class for coefficients<dim>
 	{
-		coefficients<dim> coeffs;
+		coefficients<dim> coeffs; // represents the polynomial
 
-		term_cont<dim> actives;
+		term_cont<dim> actives; // set of "active" coefficients (as specified by their correesponding terms): those that are allowed to participate in a minimization operation on coefficients
 
-		inline coefficients<dim> sieve_acts() const;
+		inline coefficients<dim> sieve_acts() const; // returns a coefficients<dim> object with only the active coefficients
 
-		inline bool in_actives(const compound_term<dim>&) const;
-		inline void activate(const compound_term<dim>&);
+		inline bool in_actives(const compound_term<dim>&) const; // checks if the coefficient specified by the given term is active
+		inline void activate(const compound_term<dim>&); // makes the coefficient specified by the given term active
 
-		point<dim> operator()(const point<dim>&, const coefficients<dim>&) const;
-		point<dim> operator()(const point<dim>&) const;
+		point<dim> operator()(const point<dim>&, const coefficients<dim>&) const; // evaluates the polynomial at the given point and with given coefficient values to use for active coefficients
+		point<dim> operator()(const point<dim>&) const; // evaluates the polynomial (represented in data member coeffs) at the given point
 	};
 }
 
+// Definitions of members of class templates
 
 template <size_t dim>
 inline polynomial::power_type polynomial::degree(const term<dim>& t)

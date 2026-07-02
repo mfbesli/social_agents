@@ -1,6 +1,7 @@
 #pragma once
 
-// TODO NEXT (3rd) : descriptions in this file ?
+// Different polynomials that will be used as "ontic" functions,
+// i.e., underlying functions that drive the evolution of a simulated process
 
 #include "polynomial.h"
 
@@ -20,3 +21,4 @@ struct simple_flat_poly : public polynomial::coefficients<2>
 
 	simple_flat_poly(polynomial::float_type K = K_def, polynomial::float_type a = a_def, polynomial::float_type b = b_def);
 };
+

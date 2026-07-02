@@ -1,6 +1,12 @@
 #pragma once
 
-// TODO NEXT (2nd) : description of FDC
+// - A function object base class to implement :
+//		Finite Difference Method : algorithm to approximate the time derivative of a multi-dimensional function at a point
+//		given function values at fixed time distances (nodes) to the point
+// 
+// - Classes derived from this base class implementing the method with different coefficients,
+//		which are determined by the number and positions of nodes
+
 
 #include "polynomial.h"
 #include "opers.h"
@@ -11,6 +17,7 @@ template <size_t dim>
 struct fdc_base
 {
 	virtual polynomial::point<dim> operator()(const std::deque<polynomial::point<dim>>&, polynomial::float_type) const = 0;
+												// parameters: deque of points specifying the nodes, time step
 
 	virtual constexpr size_t length() const = 0;
 
@@ -18,15 +25,15 @@ struct fdc_base
 };
 
 template <size_t dim, size_t fdc_len = 5>
-struct backward_fdc : public fdc_base<dim>
-{
+struct backward_fdc : public fdc_base<dim> // finite difference coefficients (FDC) with backward node positions
+{										   // (generic order (fdc_len) case not implemented yet)
 	virtual polynomial::point<dim> operator()(const std::deque<polynomial::point<dim>>&, polynomial::float_type) const;
 
 	constexpr size_t length() const;
 };
 
 template <size_t dim>
-struct backward_fdc<dim, 3> : public fdc_base<dim>
+struct backward_fdc<dim, 3> : public fdc_base<dim> // 3rd order backward FDC
 {
 	virtual polynomial::point<dim> operator()(const std::deque<polynomial::point<dim>>&, polynomial::float_type) const;
 
@@ -34,7 +41,7 @@ struct backward_fdc<dim, 3> : public fdc_base<dim>
 };
 
 template <size_t dim>
-struct backward_fdc<dim, 5> : public fdc_base<dim>
+struct backward_fdc<dim, 5> : public fdc_base<dim> // 5th order backward FDC
 {
 	virtual polynomial::point<dim> operator()(const std::deque<polynomial::point<dim>>&, polynomial::float_type) const;
 

@@ -42,7 +42,7 @@
     <ClInclude Include="numerical_sim.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ontic_poly_functions.h">
+    <ClInclude Include="ontic_poly_funcs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="opers.h">
@@ -61,6 +61,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="unique_id.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="choose_funcs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

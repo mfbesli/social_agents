@@ -22,13 +22,14 @@
     <ClInclude Include="aug_array.h" />
     <ClInclude Include="binomial_coeff.h" />
     <ClInclude Include="change_func.h" />
+    <ClInclude Include="choose_funcs.h" />
     <ClInclude Include="polynomial_numeric_utils.h" />
     <ClInclude Include="compound_container.h" />
     <ClInclude Include="container_traits.h" />
     <ClInclude Include="fdc.h" />
     <ClInclude Include="minimize.h" />
     <ClInclude Include="numerical_sim.h" />
-    <ClInclude Include="ontic_poly_functions.h" />
+    <ClInclude Include="ontic_poly_funcs.h" />
     <ClInclude Include="opers.h" />
     <ClInclude Include="polynomial.h" />
     <ClInclude Include="single_ind_seq_base.h" />

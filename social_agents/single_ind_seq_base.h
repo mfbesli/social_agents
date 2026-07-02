@@ -1,5 +1,9 @@
 #pragma once
 
+// Base classes for simulation processes that will be run sequentially,
+// i.e., one individual after the other at each iteration
+
+
 #include "unique_id.h"
 #include "polynomial_numeric_utils.h"
 #include "fdc.h"
